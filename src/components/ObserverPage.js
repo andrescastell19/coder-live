@@ -19,12 +19,12 @@ function ObserverPage() {
       setErrors('No hay token de sesión. Inicia sesión primero.');
       return;
     }
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    let host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1') {
-      host = 'localhost';
+    let wsUrl;
+    if (window.location.protocol === 'https:') {
+      wsUrl = `wss://live-coder-593m.onrender.com/?token=${token}`;
+    } else {
+      wsUrl = `ws://localhost:3002/?token=${token}`;
     }
-    const wsUrl = `${wsProtocol}://${host}:3002/?token=${token}`;
     wsRef.current = new window.WebSocket(wsUrl);
     wsRef.current.onopen = () => setErrors('');
     wsRef.current.onerror = (e) => setErrors('No se pudo conectar al servidor WebSocket en ' + wsUrl);

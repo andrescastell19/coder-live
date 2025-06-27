@@ -7,8 +7,16 @@ function LoginPage() {
   const [pass, setPass] = useState('');
   const navigate = useNavigate();
 
+  const getBackendUrl = () => {
+    if (window.location.protocol === 'https:') {
+      return 'https://live-coder-593m.onrender.com/login';
+    } else {
+      return 'http://localhost:3002/login';
+    }
+  };
+
   const login = () => {
-    fetch('http://localhost:3002/login', {
+    fetch(getBackendUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',

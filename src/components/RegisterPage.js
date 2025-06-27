@@ -12,7 +12,14 @@ function RegisterPage() {
     e.preventDefault();
     setMsg('');
     try {
-      const res = await fetch('/register', {
+      const getBackendUrl = () => {
+        if (window.location.protocol === 'https:') {
+          return 'https://live-coder-593m.onrender.com/register';
+        } else {
+          return 'http://localhost:3002/register';
+        }
+      };
+      const res = await fetch(getBackendUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
