@@ -4,6 +4,10 @@ import MonacoEditor from './MonacoEditor';
 import '../css/styles.css';
 
 function getToken() {
+  // Primero intenta obtener el token de localStorage (body de login)
+  const token = localStorage.getItem('jwt_token');
+  if (token) return token;
+  // Fallback: intenta obtenerlo de la cookie (legacy)
   const match = document.cookie.match(/(^| )token=([^;]+)/);
   return match ? match[2] : '';
 }

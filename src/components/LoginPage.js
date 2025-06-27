@@ -25,6 +25,10 @@ function LoginPage() {
       .then(async (res) => {
         if (!res.ok) throw new Error('Login inválido');
         const obj = await res.json();
+        // Guardar el token si viene en el body
+        if (obj.token) {
+          localStorage.setItem('jwt_token', obj.token);
+        }
         if (obj.user === 'admin') {
           navigate('/admin');
         } else if (obj.user === 'dev') {
