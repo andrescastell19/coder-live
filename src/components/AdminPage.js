@@ -14,7 +14,7 @@ function getToken() {
 
 function AdminPage() {
   const [code, setCode] = useState('');
-  const [readOnly, setReadOnly] = useState(false);
+  const [readOnly, setReadOnly] = useState(true); // admin inicia deshabilitado
   const [output, setOutput] = useState('');
   const [errors, setErrors] = useState('');
   const wsRef = useRef();
@@ -46,7 +46,7 @@ function AdminPage() {
       else if (data.type === 'output') setOutput(data.output);
       else if (data.type === 'admin_editing') {
         adminEditing.current = data.editing;
-        setReadOnly(data.editing);
+        setReadOnly(!data.editing); // Habilita edición si admin_editing es true
       } else if (data.type === 'dev_editing') {
         devEditing.current = data.editing;
       }
@@ -68,10 +68,12 @@ function AdminPage() {
   };
 
   const handleLock = () => {
-    adminEditing.current = !adminEditing.current;
-    wsRef.current.send(JSON.stringify({ type: 'admin_editing', editing: adminEditing.current }));
-    setReadOnly(adminEditing.current);
-    if (!adminEditing.current) {
+    const newEditing = !adminEditing.current;
+    adminEditing.current = newEditing;
+    setReadOnly(!newEditing); // Habilita edición si admin_editing es true
+    wsRef.current.send(JSON.stringify({ type: 'admin_editing', editing: newEditing }));
+    if (!newEditing) {
+      // Cuando admin sale de modo edición, sincroniza el código
       wsRef.current.send(JSON.stringify({ type: 'code', code }));
     }
   };
