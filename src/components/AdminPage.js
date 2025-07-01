@@ -38,15 +38,26 @@ function AdminPage() {
       return;
     }
     let wsUrl;
+    let heartbeat;
     if (window.location.protocol === 'https:') {
       wsUrl = `wss://live-coder-593m.onrender.com/ws?token=${token}&roomId=${roomId}`;
     } else {
       wsUrl = `ws://localhost:3002/ws?token=${token}&roomId=${roomId}`;
     }
     wsRef.current = new window.WebSocket(wsUrl);
-    wsRef.current.onopen = () => setErrors('');
+    wsRef.current.onopen = () => {
+      setErrors('');
+      heartbeat = setInterval(() => {
+        if (wsRef.current && wsRef.current.readyState === 1) {
+          wsRef.current.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 30000);
+    };
     wsRef.current.onerror = (e) => setErrors('No se pudo conectar al servidor WebSocket en ' + wsUrl);
-    wsRef.current.onclose = (e) => setErrors('Conexión WebSocket cerrada. ¿El backend está corriendo en el puerto 3002?');
+    wsRef.current.onclose = (e) => {
+      setErrors('Conexión WebSocket cerrada.');
+      if (heartbeat) clearInterval(heartbeat);
+    };
     wsRef.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'init') setCode(data.code);
@@ -59,7 +70,10 @@ function AdminPage() {
         devEditing.current = data.editing;
       }
     };
-    return () => wsRef.current && wsRef.current.close();
+    return () => {
+      wsRef.current && wsRef.current.close();
+      if (heartbeat) clearInterval(heartbeat);
+    };
   }, [roomCreated]);
 
   // Handler para crear la sala

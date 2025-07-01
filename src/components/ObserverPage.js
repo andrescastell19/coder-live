@@ -50,15 +50,30 @@ function ObserverPage() {
             } else {
               wsUrl = `ws://localhost:3002/ws?token=${token}&roomId=${roomId}`;
             }
+            let heartbeat;
             wsRef.current = new window.WebSocket(wsUrl);
-            wsRef.current.onopen = () => setErrors('');
+            wsRef.current.onopen = () => {
+              setErrors('');
+              heartbeat = setInterval(() => {
+                if (wsRef.current && wsRef.current.readyState === 1) {
+                  wsRef.current.send(JSON.stringify({ type: 'ping' }));
+                }
+              }, 30000);
+            };
             wsRef.current.onerror = (e) => setErrors('No se pudo conectar al servidor WebSocket en ' + wsUrl);
-            wsRef.current.onclose = (e) => setErrors('Conexión WebSocket cerrada. ¿El backend está corriendo en el puerto 3002?');
+            wsRef.current.onclose = (e) => {
+              setErrors('Conexión WebSocket cerrada.');
+              if (heartbeat) clearInterval(heartbeat);
+            };
             wsRef.current.onmessage = (event) => {
               const data = JSON.parse(event.data);
               if (data.type === 'init') setCode(data.code);
               else if (data.type === 'code') setCode(data.code);
               else if (data.type === 'output') setOutput(data.output);
+            };
+            // Limpiar heartbeat al desmontar
+            return () => {
+              if (heartbeat) clearInterval(heartbeat);
             };
           } else {
             setErrors('La sala no existe.');
