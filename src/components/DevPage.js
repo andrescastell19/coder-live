@@ -28,28 +28,62 @@ function DevPage() {
       setErrors('No hay token de sesión. Inicia sesión primero.');
       return;
     }
-    let wsUrl;
-    if (window.location.protocol === 'https:') {
-      wsUrl = `wss://live-coder-593m.onrender.com/?token=${token}`;
-    } else {
-      wsUrl = `ws://localhost:3002/?token=${token}`;
+    // Obtener roomId de la URL o de otra fuente global
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('roomId');
+    if (!roomId) {
+      setErrors('No se encontró roomId en la URL.');
+      return;
     }
-    wsRef.current = new window.WebSocket(wsUrl);
-    wsRef.current.onopen = () => setErrors('');
-    wsRef.current.onerror = (e) => setErrors('No se pudo conectar al servidor WebSocket en ' + wsUrl);
-    wsRef.current.onclose = (e) => setErrors('Conexión WebSocket cerrada. ¿El backend está corriendo en el puerto 3002?');
-    wsRef.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'init') setCode(data.code);
-      else if (data.type === 'code') setCode(data.code);
-      else if (data.type === 'output') setOutput(data.output);
-      else if (data.type === 'admin_editing') {
-        adminEditing.current = data.editing;
-        setReadOnly(data.editing);
-      } else if (data.type === 'dev_editing') {
-        devEditing.current = data.editing;
-      }
-    };
+
+    // Validar roomId antes de conectar WebSocket
+    const backendBase = window.location.protocol === 'https:'
+      ? 'https://live-coder-593m.onrender.com'
+      : 'http://localhost:3002';
+    fetch(`${backendBase}/room-exists?roomId=${encodeURIComponent(roomId)}`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+      .then(async res => {
+        if (res.ok) {
+          const data = await res.json();
+          if (data.exists) {
+            // Solo conectar WebSocket si la sala existe
+            let wsUrl;
+            if (window.location.protocol === 'https:') {
+              wsUrl = `wss://live-coder-593m.onrender.com/ws?token=${token}&roomId=${roomId}`;
+            } else {
+              wsUrl = `ws://localhost:3002/ws?token=${token}&roomId=${roomId}`;
+            }
+            wsRef.current = new window.WebSocket(wsUrl);
+            wsRef.current.onopen = () => setErrors('');
+            wsRef.current.onerror = (e) => setErrors('No se pudo conectar al servidor WebSocket en ' + wsUrl);
+            wsRef.current.onclose = (e) => setErrors('Conexión WebSocket cerrada. ¿El backend está corriendo en el puerto 3002?');
+            wsRef.current.onmessage = (event) => {
+              const data = JSON.parse(event.data);
+              if (data.type === 'init') setCode(data.code);
+              else if (data.type === 'code') setCode(data.code);
+              else if (data.type === 'output') setOutput(data.output);
+              else if (data.type === 'admin_editing') {
+                adminEditing.current = data.editing;
+                setReadOnly(data.editing);
+              } else if (data.type === 'dev_editing') {
+                devEditing.current = data.editing;
+              }
+            };
+          } else {
+            setErrors('La sala no existe.');
+          }
+        } else if (res.status === 404) {
+          setErrors('La sala no existe.');
+        } else {
+          const error = await res.json().catch(() => ({}));
+          setErrors('Error: ' + (error.error || 'Desconocido'));
+        }
+      })
+      .catch(err => {
+        setErrors('Error de red: ' + err.message);
+      });
     return () => wsRef.current && wsRef.current.close();
   }, [getToken()]);
 
