@@ -1,5 +1,5 @@
 
-# Coder Live
+# Source Code Editor Interview
 
 Plataforma de colaboración en tiempo real para entrevistas técnicas y coding sessions, con soporte multi-rol (admin, dev, observer), editor Monaco, WebSocket colaborativo y autenticación JWT.
 
