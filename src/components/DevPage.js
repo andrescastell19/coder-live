@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import MonacoEditor from './MonacoEditor';
+import DevMenu from './DevMenu';
 import '../css/styles.css';
 
 function getToken() {
@@ -16,6 +17,8 @@ function DevPage() {
   const [readOnly, setReadOnly] = useState(false);
   const [output, setOutput] = useState('');
   const [errors, setErrors] = useState('');
+  const [language, setLanguage] = useState('javascript');
+  const [roomId, setRoomId] = useState('');
   const wsRef = useRef();
   const devEditing = useRef(false);
   const adminEditing = useRef(false);
@@ -28,10 +31,11 @@ function DevPage() {
       setErrors('No hay token de sesión. Inicia sesión primero.');
       return;
     }
-    // Obtener roomId de la URL o de otra fuente global
+    // Obtener roomId de la URL
     const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get('roomId');
-    if (!roomId) {
+    const urlRoomId = urlParams.get('roomId');
+    setRoomId(urlRoomId || '');
+    if (!urlRoomId) {
       setErrors('No se encontró roomId en la URL.');
       return;
     }
@@ -40,7 +44,7 @@ function DevPage() {
     const backendBase = window.location.protocol === 'https:'
       ? 'https://live-coder-593m.onrender.com'
       : 'http://localhost:3002';
-    fetch(`${backendBase}/room-exists?roomId=${encodeURIComponent(roomId)}`, {
+    fetch(`${backendBase}/room-exists?roomId=${encodeURIComponent(urlRoomId)}`, {
       method: 'GET',
       credentials: 'include',
     })
@@ -50,12 +54,12 @@ function DevPage() {
           if (data.exists) {
             // Solo conectar WebSocket si la sala existe
             let wsUrl;
-            if (window.location.protocol === 'https:') {
-              wsUrl = `wss://live-coder-593m.onrender.com/ws?token=${token}&roomId=${roomId}`;
-            } else {
-              wsUrl = `ws://localhost:3002/ws?token=${token}&roomId=${roomId}`;
-            }
             let heartbeat;
+            if (window.location.protocol === 'https:') {
+              wsUrl = `wss://live-coder-593m.onrender.com/ws?token=${token}&roomId=${urlRoomId}`;
+            } else {
+              wsUrl = `ws://localhost:3002/ws?token=${token}&roomId=${urlRoomId}`;
+            }
             wsRef.current = new window.WebSocket(wsUrl);
             wsRef.current.onopen = () => {
               setErrors('');
@@ -72,7 +76,10 @@ function DevPage() {
             };
             wsRef.current.onmessage = (event) => {
               const data = JSON.parse(event.data);
-              if (data.type === 'init') setCode(data.code);
+              if (data.type === 'init') {
+                setCode(data.code);
+                if (data.language) setLanguage(data.language);
+              }
               else if (data.type === 'code') setCode(data.code);
               else if (data.type === 'output') setOutput(data.output);
               else if (data.type === 'admin_editing') {
@@ -80,6 +87,8 @@ function DevPage() {
                 setReadOnly(data.editing);
               } else if (data.type === 'dev_editing') {
                 devEditing.current = data.editing;
+              } else if (data.type === 'language') {
+                setLanguage(data.language);
               }
             };
             // Limpiar heartbeat al desmontar
@@ -100,7 +109,7 @@ function DevPage() {
         setErrors('Error de red: ' + err.message);
       });
     return () => wsRef.current && wsRef.current.close();
-  }, [getToken()]);
+  }, []);
 
   const handleChange = (val) => {
     setCode(val);
@@ -121,14 +130,27 @@ function DevPage() {
     }, 400);
   };
 
+
   const handleRun = () => {
-    wsRef.current.send(JSON.stringify({ type: 'run', code }));
+    wsRef.current.send(JSON.stringify({ type: 'run', code, language }));
   };
+
+  // Mensaje de estado
+  let infoMsg = '';
+  if (readOnly) {
+    infoMsg = 'El administrador ha bloqueado la edición. Espera a que habilite la edición para ti.';
+  } else if (devEditing.current) {
+    infoMsg = 'Estás editando el código. Se bloqueará si el admin toma el control.';
+  } else {
+    infoMsg = 'Puedes editar el código mientras el admin lo permita.';
+  }
 
   return (
     <div style={{ background: '#1e1e1e', color: 'white', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      <MonacoEditor value={code} onChange={handleChange} readOnly={readOnly} />
-      <button id="run" onClick={handleRun}>Ejecutar</button>
+      <DevMenu language={language} roomId={roomId} />
+      <div style={{ margin: '0 32px 8px 32px', color: readOnly ? '#fbb' : '#bbf', fontWeight: 500, minHeight: 24 }}>{infoMsg}</div>
+      <MonacoEditor value={code} onChange={handleChange} readOnly={readOnly} language={language} />
+      <button id="run" onClick={handleRun} style={{ margin: 16, padding: 10, background: '#0a0', color: '#fff', border: 'none', borderRadius: 4, fontWeight: 'bold' }}>Ejecutar</button>
       <div id="errors" style={{ color: errors ? '#f44' : undefined }}>{errors}</div>
       <pre id="output">{output}</pre>
     </div>

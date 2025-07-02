@@ -6,6 +6,7 @@ import RegisterPage from './components/RegisterPage';
 import AdminPage from './components/AdminPage';
 import DevPage from './components/DevPage';
 import ObserverPage from './components/ObserverPage';
+import ErrorPage from './components/ErrorPage';
 import './App.css';
 
 function App() {
@@ -18,7 +19,8 @@ function App() {
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/dev" element={<DevPage />} />
           <Route path="/observer" element={<ObserverPage />} />
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="/error" element={<ErrorPage />} />
+          <Route path="*" element={<Navigate to="/error" state={{ error: 'Página no encontrada.' }} />} />
         </Routes>
       </div>
     </Router>
