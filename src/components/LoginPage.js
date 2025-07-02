@@ -90,35 +90,46 @@ function LoginPage() {
   };
 
   return (
-    <div style={{ margin: 0, fontFamily: 'sans-serif', background: '#1e1e1e', color: 'white', minHeight: '100vh' }}>
-      {!loginSuccess ? (
-        <div id="login" style={{ display: 'flex', gap: 5, padding: 10, background: '#111' }}>
-          <input type="text" id="user" placeholder="Usuario" value={user} onChange={e => setUser(e.target.value)} style={{ padding: 5 }} />
-          <input type="password" id="pass" placeholder="Contraseña" value={pass} onChange={e => setPass(e.target.value)} style={{ padding: 5 }} />
-          <button onClick={login} style={{ padding: 10, background: '#444', color: 'white', border: 'none', cursor: 'pointer' }}>Login</button>
+    <div className="login-bg">
+      <div className="login-container">
+        <div className="login-header">
+          <img src="/logo192.png" alt="Coder Live" className="login-logo" />
+          <h1>Coder Live</h1>
+          <p className="login-subtitle">Colaboración en tiempo real para entrevistas técnicas</p>
         </div>
-      ) : (
-        role === 'admin' ? (
-          <div id="roomid-admin" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 10, background: '#111', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-              <span style={{ color: '#fff' }}>Room ID para crear la sesión:</span>
-              <input type="text" id="roomid-input" placeholder="roomId" value={roomId} onChange={e => setRoomId(e.target.value)} style={{ padding: 5 }} />
-              <button onClick={handleContinue} style={{ padding: 10, background: '#444', color: 'white', border: 'none', cursor: loading ? 'wait' : 'pointer' }} disabled={loading}>
-                {loading ? 'Creando...' : 'Crear sala'}
-              </button>
-            </div>
-            <span style={{ color: '#aaa', marginLeft: 2 }}>Como admin, defines el Room ID para la sesión.</span>
-            {createError && <div style={{ color: '#f44', marginTop: 4 }}>{createError}</div>}
-          </div>
+        {!loginSuccess ? (
+          <form className="login-form" onSubmit={e => { e.preventDefault(); login(); }}>
+            <label htmlFor="user">Usuario</label>
+            <input type="text" id="user" placeholder="Usuario" value={user} onChange={e => setUser(e.target.value)} autoFocus autoComplete="username" />
+            <label htmlFor="pass">Contraseña</label>
+            <input type="password" id="pass" placeholder="Contraseña" value={pass} onChange={e => setPass(e.target.value)} autoComplete="current-password" />
+            <button type="submit" className="login-btn">Iniciar sesión</button>
+          </form>
         ) : (
-          <div id="roomid" style={{ display: 'flex', gap: 5, padding: 10, background: '#111', alignItems: 'center' }}>
-            <span style={{ color: '#fff' }}>Ingresa el Room ID:</span>
-            <input type="text" id="roomid-input" placeholder="roomId" value={roomId} onChange={e => setRoomId(e.target.value)} style={{ padding: 5 }} />
-            <button onClick={handleContinue} style={{ padding: 10, background: '#444', color: 'white', border: 'none', cursor: 'pointer' }}>Continuar</button>
-            <span style={{ color: '#aaa', marginLeft: 10 }}>Ingresa el roomId proporcionado por el admin.</span>
-          </div>
-        )
-      )}
+          role === 'admin' ? (
+            <div className="login-roomid-admin">
+              <h2>Crear nueva sala</h2>
+              <div className="login-roomid-row">
+                <input type="text" id="roomid-input" placeholder="Room ID" value={roomId} onChange={e => setRoomId(e.target.value)} />
+                <button onClick={handleContinue} className="login-btn" disabled={loading}>
+                  {loading ? 'Creando...' : 'Crear sala'}
+                </button>
+              </div>
+              <span className="login-roomid-hint">Como admin, defines el Room ID para la sesión.</span>
+              {createError && <div className="login-error">{createError}</div>}
+            </div>
+          ) : (
+            <div className="login-roomid">
+              <h2>Unirse a una sala</h2>
+              <div className="login-roomid-row">
+                <input type="text" id="roomid-input" placeholder="Room ID" value={roomId} onChange={e => setRoomId(e.target.value)} />
+                <button onClick={handleContinue} className="login-btn">Continuar</button>
+              </div>
+              <span className="login-roomid-hint">Ingresa el Room ID proporcionado por el admin.</span>
+            </div>
+          )
+        )}
+      </div>
     </div>
   );
 }
